@@ -1,11 +1,15 @@
+import *as THREE from "three"
+
 var example = (function () {
 
   "use strict";
 
   var scene = new THREE.Scene(),
-    renderer = new THREE.WebGLRenderer(),
-    light = new THREE.AmbientLight(0xbbbbbb), // White ambient light
-    light2 = new THREE.PointLight(0x222222, 20, 50, 2),
+      renderer = new THREE.WebGLRenderer({
+      antialias: true
+    }),
+    ambient_light = new THREE.AmbientLight(0xbbbbbb), // White ambient light
+    point_light   = new THREE.PointLight(0xffffff, 1000, 0),
     time = 0,
     camera,
     crate,
@@ -20,7 +24,7 @@ var example = (function () {
     renderer.setSize(window.innerWidth, window.innerHeight);
     document.getElementById("webgl-container").appendChild(renderer.domElement);
 
-    scene.add(light);
+    scene.add(ambient_light);
 
     camera = new THREE.PerspectiveCamera(
       40,                                     // Field of View
@@ -32,15 +36,20 @@ var example = (function () {
     camera.position.z = 100;
     scene.add(camera);
 
-    scene.add(light2);
-    sun = new THREE.Mesh(
-      new THREE.OctahedronBufferGeometry(1),
-      new THREE.MeshBasicMaterial({
-        color: 0xffffff,
-        wireframe: true
-      }));
-    sun.position.set(light2.position.x, light2.position.y, light2.position.z);
-    scene.add(sun);
+    scene.add(point_light);
+
+    const sphereSize = 1;
+    const pointLightHelper = new THREE.PointLightHelper( point_light, sphereSize );
+    scene.add( pointLightHelper );
+
+    //sun = new THREE.Mesh(
+    //  new THREE.SphereGeometry( 1 ),
+    //  new THREE.MeshBasicMaterial({
+    //    color: 0xffff00,
+    //    wireframe: false
+    //  }));
+    //sun.position.set(point_light.position.x, point_light.position.y, point_light.position.z);
+    //scene.add(sun);
 
     var loader = new THREE.TextureLoader();
     var disturbingTexture = loader.load('static/textures/disturb.jpg');
@@ -126,8 +135,8 @@ var example = (function () {
 
   // Recursively draw scene
   function render() {
-    light2.position.set(25 * Math.sin(-time), 0, 25 * Math.cos(time));
-    sun.position.set(light2.position.x, light2.position.y, light2.position.z);
+    point_light.position.set(25 * Math.sin(-time), 0, 25 * Math.cos(time));
+    //sun.position.set(point_light.position.x, point_light.position.y, point_light.position.z);
 
     crate.rotation.y += 0.01;
     crate.rotation.x += 0.005;

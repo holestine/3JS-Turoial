@@ -53,7 +53,7 @@ def step_5():
     return render_template('5.htm')
 
 @app.route("/Lorenz.htm")
-def Lorenz():
+def lorenz():
     """
     Serves the opening page for the samples
     """

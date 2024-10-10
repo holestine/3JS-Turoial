@@ -9,8 +9,15 @@
     <body>
     	<div id="webgl-container"></div>
     	
-    	<script src="static/scripts/three.js"></script>
-    	<script src="static/app4.js"></script>
+    	<script type="importmap">
+            {
+                "imports": {
+                    "three": "https://threejs.org/build/three.module.js",
+                    "three/addons/": "https://threejs.org/examples/jsm/"
+                }
+            }
+        </script>
+    	<script type="module" src="static/app4.js"></script>
     </body>
 
 </html>

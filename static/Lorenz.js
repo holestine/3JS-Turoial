@@ -1,18 +1,22 @@
+import *as THREE from "three"
+import {OrbitControls} from "three/addons/controls/OrbitControls.js"
+
 var example = (function () {
 
   "use strict";
 
   var scene = new THREE.Scene(),
     renderer = new THREE.WebGLRenderer(),
-    light = new THREE.AmbientLight(0xbbbbbb), // White ambient light
-    light2 = new THREE.PointLight(0xffffff, 10, 50, 2),
-    time = 0,
+    ambient_light = new THREE.AmbientLight(0xffffff), // White ambient light
+    point_light = new THREE.PointLight(0xffffff, 10000, 0),
     camera,
     starMesh,
-    rk4lorenzMesh,
-    eulerlorenzMesh,
     rk4material,
     rk4path,
+    lorenz_points = [],
+    lorenz_object,
+    curve,
+    geometry,
     rk4pos,
     rk4newpos,
     step,
@@ -25,27 +29,34 @@ var example = (function () {
     renderer.setSize(window.innerWidth, window.innerHeight);
     document.getElementById("webgl-container").appendChild(renderer.domElement);
 
-    scene.add(light);
+    scene.add(ambient_light);
 
     camera = new THREE.PerspectiveCamera(
       40,                                     // Field of View
       window.innerWidth / window.innerHeight, // Aspect Ratio
-      1,                                      // Near Clipping Plane
-      1000                                    // Far Clipping Plane
+      .1,                                     // Near Clipping Plane
+      2000                                    // Far Clipping Plane
     );
 
+    const controls = new OrbitControls( camera, renderer.domElement );
+
     camera.position.z = 600;
-    scene.add(camera);
 
-    light2.position.set(0, 0, 25);
-    scene.add(light2);
+    //controls.update() must be called after any manual changes to the camera's transform
+    controls.update();
 
+    point_light.position.set(0, 0, 25);
+    scene.add(point_light);
+
+    const sphereSize = 1;
+    const pointLightHelper = new THREE.PointLightHelper( point_light, sphereSize );
+    scene.add( pointLightHelper );
 
     var loader = new THREE.TextureLoader();
     var starTexture = loader.load('static/textures/starfield.png');
 
     starMesh = new THREE.Mesh(
-      new THREE.SphereGeometry(200, 8, 8),
+      new THREE.SphereGeometry(500, 8, 8),
       new THREE.MeshPhongMaterial({
         map: starTexture,
         side: THREE.BackSide,
@@ -53,27 +64,16 @@ var example = (function () {
       }));
     scene.add(starMesh)
 
-
-
     step = .001;
     rk4path = new THREE.CurvePath();
-    rk4pos = new THREE.Vector3(150, -150, 150);
+    rk4pos = new THREE.Vector3(-150, 150, -150);
     rk4newpos = RK4Lorenz(rk4pos, step);
-
-    //var eulerpath = new THREE.CurvePath();
-    //var eulerpos = new THREE.Vector3(5, 5, 5);
-    //var eulernewpos = Euler(eulerpos, Lorenz(eulerpos), step);
-
-    //for (var i = 0; i < 1000; i++) {
-    //    eulerpath.add(new THREE.LineCurve(eulerpos, eulernewpos));
-    //    eulerpos = eulernewpos
-    //    eulernewpos = Euler(eulerpos, Lorenz(eulerpos), step);
-    //}
 
     for (var i = 0; i < 10000; i++) {
       rk4path.add(new THREE.LineCurve(rk4pos, rk4newpos));
       rk4pos = rk4newpos;
       rk4newpos = RK4Lorenz(rk4pos, step);
+      lorenz_points.push(rk4newpos)
     }
 
     rk4material = new THREE.MeshPhongMaterial({
@@ -83,20 +83,28 @@ var example = (function () {
       reflectivity: 10
     });
 
-    //var eulermaterial = new THREE.MeshLambertMaterial({
-    //    color: 0x55880000,
-    //    wireframe: false
-    //}); 
+    var material = new THREE.LineBasicMaterial({
+      color: 0x00ff00,
+      linewidth: 100,
+    });
 
-    rk4lorenzMesh = new THREE.Mesh(
-      new THREE.TubeGeometry(rk4path, 5000, .4, 50, false),
-      rk4material);
-    scene.add(rk4lorenzMesh);
+    //rk4lorenzMesh = new THREE.Mesh(
+    //  new THREE.TubeGeometry(lorenz_points, 5000, .4, 50, false),
+    //  rk4material);
+    //scene.add(rk4lorenzMesh);
 
-    //eulerlorenzMesh = new THREE.Mesh(
-    //    new THREE.TubeGeometry(eulerpath, 5000, .2, 8, false),
-    //    eulermaterial);
-    //scene.add(eulerlorenzMesh);
+    // Use CatmullRomCurve3 so we can edit the points later
+    curve = new THREE.CatmullRomCurve3(lorenz_points);
+    const points = curve.getPoints( 10000 );
+    //geometry = new THREE.BufferGeometry().setFromPoints( points );
+    //lorenz_object = new THREE.Line( geometry, material );
+    geometry = new THREE.TubeGeometry(curve, 10000, .4, 8, false)
+    lorenz_object = new THREE.Mesh( geometry, rk4material );
+    scene.add(lorenz_object);
+
+    const directionalLight = new THREE.DirectionalLight( 0xffffff, 1 );
+    directionalLight.target = lorenz_object
+    scene.add( directionalLight );
 
     render();
   }
@@ -138,25 +146,21 @@ var example = (function () {
     // Return next position using Euler, Runge-Kutta slope and full time step
     return Euler(start, rkSlope, dt);
   }
-
-
  
   // Recursively draw scene
   function render() {
-    //rk4path.add(new THREE.LineCurve(rk4pos, rk4newpos));
-    //rk4pos = rk4newpos;
-    //rk4newpos = RK4Lorenz(rk4pos, step);
-    //rk4lorenzMesh = new THREE.Mesh(
-    //    new THREE.TubeGeometry(rk4path, 5000, .2, 8, false),
-    //    rk4material);
-    //scene.add(rk4lorenzMesh);
 
     starMesh.rotation.y -= 0.0005;
     starMesh.rotation.x -= 0.00025;
 
-    //rk4lorenzMesh.x -= 100;
-    rk4lorenzMesh.rotation.x += 0.00125 * rate;
-    rk4lorenzMesh.rotation.y += 0.005 * rate;
+    lorenz_object.rotation.x += 0.00125 * rate;
+    lorenz_object.rotation.y += 0.005 * rate;
+
+    //curve.points[0].x += 1
+    //geometry = new THREE.BufferGeometry().setFromPoints(curve.getPoints(10000));
+
+    //lorenz_object.geometry.dispose();
+    //lorenz_object.geometry = geometry;
 
     renderer.render(scene, camera);
     requestAnimationFrame(render);

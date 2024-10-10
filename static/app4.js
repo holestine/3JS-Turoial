@@ -1,3 +1,5 @@
+import *as THREE from "three"
+
 var example = (function(){
 
     "use strict";
@@ -5,7 +7,7 @@ var example = (function(){
     var scene = new THREE.Scene(),
     renderer = new THREE.WebGLRenderer(),
     light = new THREE.AmbientLight(0xbbbbbb), // White ambient light
-	//light2 =  new THREE.PointLight( 0x222222, 20, 50, 2),
+	//light2 =  new THREE.PointLight(0xffffff, 1000, 0),
 	//time = 0,
 	//cloudMesh,
 	//sun,
